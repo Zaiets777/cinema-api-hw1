@@ -1,0 +1,176 @@
+### Змінні (сюди вставляй ID після того, як успішно виконаєш POST-запит)
+@baseUrl = http://localhost:3000
+@filmId = 75c80b4a-5617-4550-89d8-954056152be2
+@hallId = 4b0e094f-4afe-4a22-874a-1cb9745fdd70
+@showingId = 0c5e0baa-811c-4105-9900-f29854f22056
+@bookingId = 90d977d8-3b55-4c2a-81c7-c44b92f1c821
+
+
+### ================= 1. ФІЛЬМИ =================
+
+### Створення фільму (УСПІХ 201)
+# -> СКОПІЮЙ id З ВІДПОВІДІ У ЗМІННУ @filmId ВИЩЕ
+POST {{baseUrl}}/films
+Content-Type: application/json
+
+{
+  "title": "The Hateful Eight",
+  "durationMinutes": 167,
+  "releaseYear": 2015
+}
+
+### Створення фільму (ПОМИЛКА 400 - неправильний тип durationMinutes і відсутній releaseYear)
+POST {{baseUrl}}/films
+Content-Type: application/json
+
+{
+  "title": "No Time to Die",
+  "durationMinutes": "дві години"
+}
+
+### Отримання всіх фільмів (УСПІХ 200)
+GET {{baseUrl}}/films
+
+### Отримання одного фільму (УСПІХ 200)
+GET {{baseUrl}}/films/{{filmId}}
+
+### Оновлення фільму (УСПІХ 200)
+PATCH {{baseUrl}}/films/{{filmId}}
+Content-Type: application/json
+
+{
+  "durationMinutes": 168
+}
+
+
+### ================= 2. ЗАЛИ =================
+
+### Створення залу (УСПІХ 201)
+# -> СКОПІЮЙ id З ВІДПОВІДІ У ЗМІННУ @hallId ВИЩЕ
+POST {{baseUrl}}/halls
+Content-Type: application/json
+
+{
+  "name": "Червоний",
+  "rows": 3,
+  "seatsPerRow": 5
+}
+
+### Створення залу (ПОМИЛКА 409 - така назва вже є)
+POST {{baseUrl}}/halls
+Content-Type: application/json
+
+{
+  "name": "Червоний",
+  "rows": 5,
+  "seatsPerRow": 10
+}
+
+### Створення залу (ПОМИЛКА 400 - неправильні дані, від'ємне число)
+POST {{baseUrl}}/halls
+Content-Type: application/json
+
+{
+  "name": "Синій",
+  "rows": -5,
+  "seatsPerRow": 10
+}
+
+### Отримання одного залу з місцями (УСПІХ 200 - має вивести 15 місць)
+GET {{baseUrl}}/halls/{{hallId}}
+
+
+### ================= 3. СЕАНСИ =================
+
+### Створення сеансу (УСПІХ 201)
+# -> СКОПІЮЙ id З ВІДПОВІДІ У ЗМІННУ @showingId ВИЩЕ
+POST {{baseUrl}}/showings
+Content-Type: application/json
+
+{
+  "filmId": "{{filmId}}",
+  "hallId": "{{hallId}}",
+  "startsAt": "2026-12-31T18:00:00Z",
+  "price": 12500
+}
+
+### Створення сеансу (ПОМИЛКА 400 - дата в минулому)
+POST {{baseUrl}}/showings
+Content-Type: application/json
+
+{
+  "filmId": "{{filmId}}",
+  "hallId": "{{hallId}}",
+  "startsAt": "2020-01-01T18:00:00Z",
+  "price": 12500
+}
+
+### Створення сеансу (ПОМИЛКА 400 - неіснуючий фільм)
+POST {{baseUrl}}/showings
+Content-Type: application/json
+
+{
+  "filmId": "123e4567-e89b-12d3-a456-426614174000",
+  "hallId": "{{hallId}}",
+  "startsAt": "2026-12-31T18:00:00Z",
+  "price": 12500
+}
+
+### Отримання сеансів з фільтрами (УСПІХ 200)
+GET {{baseUrl}}/showings?filmId={{filmId}}&date=2026-12-31
+
+
+### ================= 4. БРОНЮВАННЯ =================
+
+### Створення бронювання (УСПІХ 201)
+# -> СКОПІЮЙ id З ВІДПОВІДІ У ЗМІННУ @bookingId ВИЩЕ
+POST {{baseUrl}}/showings/{{showingId}}/bookings
+Content-Type: application/json
+
+{
+  "seats": [
+    { "row": 1, "seat": 1 },
+    { "row": 1, "seat": 2 }
+  ]
+}
+
+### Створення бронювання (ПОМИЛКА 409 - місця 1 і 2 вже зайняті)
+POST {{baseUrl}}/showings/{{showingId}}/bookings
+Content-Type: application/json
+
+{
+  "seats": [
+    { "row": 1, "seat": 2 },
+    { "row": 1, "seat": 3 }
+  ]
+}
+
+### Створення бронювання (ПОМИЛКА 400 - дублікати в самому запиті)
+POST {{baseUrl}}/showings/{{showingId}}/bookings
+Content-Type: application/json
+
+{
+  "seats": [
+    { "row": 2, "seat": 1 },
+    { "row": 2, "seat": 1 }
+  ]
+}
+
+### Створення бронювання (ПОМИЛКА 400 - місця не існує в залі)
+POST {{baseUrl}}/showings/{{showingId}}/bookings
+Content-Type: application/json
+
+{
+  "seats": [
+    { "row": 10, "seat": 10 }
+  ]
+}
+
+### Перегляд місць сеансу (УСПІХ 200 - місця 1-1 і 1-2 мають бути isBooked: true)
+GET {{baseUrl}}/showings/{{showingId}}/seats
+
+### Скасування бронювання (УСПІХ 204)
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+
+### Перегляд місць після скасування (УСПІХ 200 - тепер усі місця знову вільні, isBooked: false)
+GET {{baseUrl}}/showings/{{showingId}}/seats
